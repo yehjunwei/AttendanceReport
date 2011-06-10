@@ -1,4 +1,5 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env ruby 1.9.2
+
 require 'rubygems'
 require 'roo'
 require 'date'
@@ -101,7 +102,11 @@ end
 
 #define intern employee number
 intern = [23]
+target_year = 2011
+target_month = 5
 
+output_xls = Excel.new("#{pwd}/#{target_year}_#{target_month}_test.xls")
+                       
 Dir.glob("#{pwd}/*.xls") do |file|
   file_path = "#{pwd}/#{file}"  
   file_basename = File.basename(file, ".xls")  
