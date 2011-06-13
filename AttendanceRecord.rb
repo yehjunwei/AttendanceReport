@@ -6,7 +6,7 @@ require 'date'
 
 pwd       = File.dirname(__FILE__)
 
-def calculate_working_hours(start_time, end_time)
+def calculate_working_hours(start_time, end_time, output_csv)
 	# define late hour/minute
 	late_hour = 9
 	late_minute = 40
@@ -32,7 +32,17 @@ def calculate_working_hours(start_time, end_time)
 	end
 end
 
-def normal_report(xls)
+def generate_report(xls, output_csv, intern)
+	name = xls.cell(2,'B')
+    number = xls.cell(2,'A')
+    output_csv.syswrite("#{number},#{name}")
+    
+    # Decide if this employee is intern
+	is_intern = false
+	if intern.include?(xls.cell(2,'A').to_i)
+		is_intern = true
+	end
+    
     target_month = 5
     target_year = 2011
     last_date_time = nil
@@ -59,7 +69,7 @@ def normal_report(xls)
 		current_day = date_time.day
 		if last_date_time == nil
 			last_day = 0
-		else
+            else
 			last_day = last_date_time.day
 		end
 		
@@ -68,7 +78,7 @@ def normal_report(xls)
 			if last_day != 0
 				# store end_time, calculate!
 				end_time = last_date_time
-				calculate_working_hours(start_time, end_time)
+				calculate_working_hours(start_time, end_time, output_csv)
 			end
 			# store start_time
 			end_time = nil
@@ -78,25 +88,10 @@ def normal_report(xls)
 		# calculate the calculate_working_hours on the last day like 5/31
 		if line == 2
 			end_time = date_time
-			calculate_working_hours(start_time, end_time)
+			calculate_working_hours(start_time, end_time, output_csv)
 		end
 		
 		last_date_time = date_time
-	end
-end
-
-def intern_report(xls)
-	puts 'This is intern!'
-end
-
-def generate_report(xls, intern)
-	name = xls.cell(2,'B')
-	puts "#{name}:"
-	
-	if intern.include?(xls.cell(2,'A').to_i)
-		intern_report(xls)
-	else
-		normal_report(xls)
 	end
 end
 
@@ -105,12 +100,19 @@ intern = [23]
 target_year = 2011
 target_month = 5
 
-output_xls = Excel.new("#{pwd}/#{target_year}_#{target_month}_test.xls")
-                       
+output_csv = File.new("#{pwd}/#{target_year}_#{target_month}_test.csv", "w+")
+if output_csv
+    output_csv.syswrite("Number,Name,start,end,late,not enough time,no record,working hours\n")
+else
+    puts "Unable to open file!"
+end
+
 Dir.glob("#{pwd}/*.xls") do |file|
   file_path = "#{pwd}/#{file}"  
   file_basename = File.basename(file, ".xls")  
   xls = Excel.new(file_path)
   #xls.to_csv("#{pwd}/#{file_basename}.csv")
-  generate_report(xls, intern)
+  generate_report(xls, output_csv, intern)
 end
+
+output_csv.close
