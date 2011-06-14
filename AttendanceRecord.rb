@@ -9,15 +9,41 @@ pwd       = File.dirname(__FILE__)
 
 class ReportGenerator
 
-	def initialize(year, month, intern, late_hour, late_min)
-		@target_year = year
-		@target_month = month
-		@intern = intern
-		@late_hour = late_hour
-		@late_min = late_min
+	def initialize()
+		conf = File.open("conf.ini", "r")
+		# first line: year month
+		line = conf.readline.split
+		@target_year = line[0].to_i
+		@target_month = line[1].to_i
+		puts @target_year
+		puts @target_month
+		
+		# second line: late hour minute
+		line = conf.readline.split
+		@late_hour = line[0].to_i
+		@late_min = line[1].to_i
+		puts @late_hour
+		puts @late_min
+		
+		# third line: intern numbers
+		@intern = conf.readline.split
+		@intern = @intern.flatten.collect {|s| s.to_i}
+		
+		pwd = File.dirname(__FILE__)
+		@output_csv = File.new("#{pwd}/#{@target_year}_#{@target_month}_Report.csv", "w+")
+		if @output_csv
+			@output_csv.syswrite("Number,Name,start,end,late,no record,not enough time,lacking hours\n")
+		else
+			puts "Unable to open file!"
+		end
+		conf.close
 	end
 	
-	def generate(xls, output_csv)
+	def close
+		@output_csv.close
+	end
+	
+	def generate(xls)
 		number = xls.cell(2,'A')
 		name = xls.cell(2,'B')
 		
@@ -25,6 +51,7 @@ class ReportGenerator
 		@is_intern = false
 		if @intern.include?(xls.cell(2,'A').to_i)
 			@is_intern = true
+			puts "This #{xls.cell(2,'A').to_i} is intern!"
 		end
 		
 		last_date_time = nil
@@ -60,7 +87,7 @@ class ReportGenerator
 				if last_day != 0
 					# store end_time, calculate!
 					end_time = last_date_time
-					calculate_working_hours(number, name, start_time, end_time, output_csv)
+					calculate_working_hours(number, name, start_time, end_time)
 				end
 				# store start_time
 				end_time = nil
@@ -70,7 +97,7 @@ class ReportGenerator
 			# calculate the calculate_working_hours on the last day like 5/31
 			if line == 2
 				end_time = date_time
-				calculate_working_hours(number, name, start_time, end_time, output_csv)
+				calculate_working_hours(number, name, start_time, end_time)
 			end
 			
 			last_date_time = date_time
@@ -78,7 +105,7 @@ class ReportGenerator
 	end
 	
 	private
-	def calculate_working_hours(number, name, start_time, end_time, output_csv)
+	def calculate_working_hours(number, name, start_time, end_time)
 		record = {"late" => false, "no_record" => false, "not_enough_time" => false}
 		
 		if start_time == end_time
@@ -108,38 +135,24 @@ class ReportGenerator
 		
 		# print record
 		if(record["late"] || record["no_record"] || record["not_enough_time"])
-			output_csv.syswrite("#{number},#{name},#{start_time.strftime("%Y-%m-%d %H:%M:%S")},#{end_time.strftime("%Y-%m-%d %H:%M:%S")},#{record["late"]? 1:nil},#{record["no_record"]? 1:nil},")
+			@output_csv.syswrite("#{number},#{name},#{start_time.strftime("%Y-%m-%d %H:%M:%S")},#{end_time.strftime("%Y-%m-%d %H:%M:%S")},#{record["late"]? 1:nil},#{record["no_record"]? 1:nil},")
 			if(record["not_enough_time"])
-				output_csv.syswrite("#{record["not_enough_time"]? 1:nil},#{9.0-working_hour.round(2)}\n")
+				@output_csv.syswrite("#{record["not_enough_time"]? 1:nil},#{9.0-working_hour.round(2)}\n")
 			else
-				output_csv.syswrite(", \n")
+				@output_csv.syswrite(", \n")
 			end
 		end
 	end
 
 end
 
-#define target year/month, intern employee number, late hour/minute
-target_year = 2011
-target_month = 6
-intern = [22,23,24]
-late_hour = 9
-late_min = 40
-
-doorman = ReportGenerator.new(target_year, target_month, intern, late_hour, late_min)
-
-output_csv = File.new("#{pwd}/#{target_year}_#{target_month}_Report.csv", "w+")
-if output_csv
-	output_csv.syswrite("Number,Name,start,end,late,no record,not enough time,lacking hours\n")
-else
-	puts "Unable to open file!"
-end
+doorman = ReportGenerator.new
 
 Dir.glob("#{pwd}/*.xls") do |file|
 	file_path = "#{pwd}/#{file}"  
 	file_basename = File.basename(file, ".xls")  
 	xls = Excel.new(file_path)
-	doorman.generate(xls, output_csv)
+	doorman.generate(xls)
 end
 
-output_csv.close
+doorman.close
