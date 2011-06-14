@@ -32,7 +32,7 @@ class ReportGenerator
 		pwd = File.dirname(__FILE__)
 		@output_csv = File.new("#{pwd}/#{@target_year}_#{@target_month}_Report.csv", "w+")
 		if @output_csv
-			@output_csv.syswrite("Number,Name,start,end,late,no record,not enough time,lacking hours\n")
+			@output_csv.syswrite("Number,Name,start,end,late,no record,not enough time,lacking hours,intern\n")
 		else
 			puts "Unable to open file!"
 		end
@@ -99,7 +99,6 @@ class ReportGenerator
 				end_time = date_time
 				calculate_working_hours(number, name, start_time, end_time)
 			end
-			
 			last_date_time = date_time
 		end
 	end
@@ -116,11 +115,15 @@ class ReportGenerator
 			# late start detection
 			if start_time.hour > @late_hour
 				#puts "#{start_time}\tLate"
-				record["late"] = true
+				if(@is_intern != true)
+					record["late"] = true
+				end
 			elsif start_time.hour == @late_hour
 				if start_time.min > @late_min
 					#puts "#{start_time}\tLate"
-					record["late"] = true
+					if(@is_intern != true)
+						record["late"] = true
+					end
 				end
 			end
 
@@ -129,17 +132,24 @@ class ReportGenerator
 			
 			if working_hour < 9.0
 				#puts "#{end_time}\tOnly #{working_hour.round(2)} hours"
-				record["not_enough_time"] = true
+				if(@is_intern != true)
+					record["not_enough_time"] = true
+				end
 			end
 		end
 		
+		if(@is_intern)
+			@output_csv.syswrite("#{number},#{name},#{start_time.strftime("%Y-%m-%d %H:%M:%S")},\
+			#{end_time.strftime("%Y-%m-%d %H:%M:%S")},#{record["late"]? 1:nil},#{record["no_record"]? 1:nil},\
+			#{record["not_enough_time"]? 1:nil},#{working_hour.round(2)},1\n")
 		# print record
-		if(record["late"] || record["no_record"] || record["not_enough_time"])
-			@output_csv.syswrite("#{number},#{name},#{start_time.strftime("%Y-%m-%d %H:%M:%S")},#{end_time.strftime("%Y-%m-%d %H:%M:%S")},#{record["late"]? 1:nil},#{record["no_record"]? 1:nil},")
+		elsif(record["late"] || record["no_record"] || record["not_enough_time"])
+			@output_csv.syswrite("#{number},#{name},#{start_time.strftime("%Y-%m-%d %H:%M:%S")},\
+			#{end_time.strftime("%Y-%m-%d %H:%M:%S")},#{record["late"]? 1:nil},#{record["no_record"]? 1:nil},")
 			if(record["not_enough_time"])
-				@output_csv.syswrite("#{record["not_enough_time"]? 1:nil},#{9.0-working_hour.round(2)}\n")
+				@output_csv.syswrite("#{record["not_enough_time"]? 1:nil},#{9.0-working_hour.round(2)},\n")
 			else
-				@output_csv.syswrite(", \n")
+				@output_csv.syswrite(",, \n")
 			end
 		end
 	end
