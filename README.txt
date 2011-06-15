@@ -8,6 +8,7 @@ Running Instruction:
    22 23 24	// 實習生的工號, 以空格隔開
 3. 雙點start_report.bat執行script
 4. 報告產生於同目錄下201X_X_Report.csv
+5. 如果是實習生, lacking hours欄位代表他實際的工作時數
 
 Running Environment:
 
