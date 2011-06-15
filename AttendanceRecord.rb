@@ -15,15 +15,15 @@ class ReportGenerator
 		line = conf.readline.split
 		@target_year = line[0].to_i
 		@target_month = line[1].to_i
-		puts @target_year
-		puts @target_month
+		puts "Target Year: \t#{@target_year}"
+		puts "Target Month: \t#{@target_month}"
 		
 		# second line: late hour minute
 		line = conf.readline.split
 		@late_hour = line[0].to_i
 		@late_min = line[1].to_i
-		puts @late_hour
-		puts @late_min
+		puts "Late Hour: \t#{@late_hour}"
+		puts "Late Minute: \t#{@late_min}"
 		
 		# third line: intern numbers
 		@intern = conf.readline.split
@@ -51,7 +51,7 @@ class ReportGenerator
 		@is_intern = false
 		if @intern.include?(xls.cell(2,'A').to_i)
 			@is_intern = true
-			puts "This #{xls.cell(2,'A').to_i} is intern!"
+			# puts "This #{xls.cell(2,'A').to_i} is intern!"
 		end
 		
 		last_date_time = nil
